@@ -1,5 +1,6 @@
-from pydantic import BaseSettings
+# backend/app/core/config.py
 from typing import List
+from pydantic_settings import BaseSettings  # <-- v2 import
 
 class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"

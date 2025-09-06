@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1.gps import router as gps_router
 from app.api.v1.wind import router as wind_router
+from app.api.v1.apparent import router as apparent_router
 
 logging.basicConfig(
     level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
@@ -24,6 +25,7 @@ app.add_middleware(
 
 app.include_router(gps_router, prefix="/api/v1")
 app.include_router(wind_router, prefix="/api/v1")
+app.include_router(apparent_router, prefix="/api/v1")
 
 @app.get("/health")
 def health():
