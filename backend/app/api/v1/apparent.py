@@ -34,7 +34,8 @@ async def apparent_wind(req: ApparentWindRequest, return_full: bool = False):
         )
         pts = map_wind(pts, times, u, v)
 
-    out = apparent_from_true(pts)
+    out = apparent_from_true(pts, min_speed_ms=(req.min_speed_ms or 0.5))
+
     start_dt, end_dt = track_window(pts)
 
     return ApparentWindResult(

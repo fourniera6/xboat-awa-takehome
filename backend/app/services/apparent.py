@@ -52,13 +52,8 @@ def compute_boat_uv(points: List[dict], course_deg: List[Optional[float]]) -> Li
         out.append((u_b, v_b))
     return out
 
-def apparent_from_true(points: List[dict]) -> List[dict]:
-    """
-    Requires wind_u10_ms/v and speed_m_s. Produces:
-    - course_deg, boat_u_ms, boat_v_ms
-    - apparent_wind_speed_ms, apparent_wind_dir_deg (from), awa_deg
-    """
-    # Ensure we have speed filled where possible
+def apparent_from_true(points: List[dict], *, min_speed_ms: float = 0.5) -> List[dict]:
+    # Ensure speed is filled where possible
     P.derive_speeds(points)
 
     course = compute_course(points)
@@ -68,30 +63,23 @@ def apparent_from_true(points: List[dict]) -> List[dict]:
     mapped = 0
     for p, crs, (ub, vb) in zip(points, course, boat_uv):
         wu, wv = p.get("wind_u10_ms"), p.get("wind_v10_ms")
-        # carry forward base fields
         row = dict(p)
         row["course_deg"] = crs
         row["boat_u_ms"] = ub
         row["boat_v_ms"] = vb
 
         if wu is None or wv is None:
-            row.update({
-                "apparent_wind_speed_ms": None,
-                "apparent_wind_dir_deg": None,
-                "awa_deg": None
-            })
-            out.append(row)
-            continue
+            row.update({"apparent_wind_speed_ms": None, "apparent_wind_dir_deg": None, "awa_deg": None})
+            out.append(row); continue
 
-        # Apparent wind vector = True wind - Boat velocity
         au = wu - (ub if ub is not None else 0.0)
         av = wv - (vb if vb is not None else 0.0)
         aspd = uv_speed(au, av)
-        adir = uv_to_met_dir_deg(au, av)   # meteorological "from"
-        if crs is not None and adir is not None:
-            awa = _wrap180(adir - crs)     # signed, + = starboard
-        else:
-            awa = None
+        adir = uv_to_met_dir_deg(au, av)
+
+        awa = None
+        if crs is not None and adir is not None and (p.get("speed_m_s") or 0.0) >= min_speed_ms:
+            awa = _wrap180(adir - crs)
 
         row.update({
             "apparent_wind_speed_ms": aspd,
@@ -101,8 +89,9 @@ def apparent_from_true(points: List[dict]) -> List[dict]:
         mapped += 1
         out.append(row)
 
-    log.info(f"Apparent wind computed for {mapped} / {len(points)} points")
+    log.info(f"Apparent wind computed for {mapped} / {len(points)} points (min_speed_ms={min_speed_ms})")
     return out
+
 
 def track_window(points: List[dict]):
     dts = [P.to_dt(p.get("timestamp")) for p in points if p.get("timestamp")]

@@ -57,6 +57,7 @@ class ApparentWindRequest(BaseModel):
     coord_strategy: Optional[str] = "centroid"       # centroid | start | midpoint
     source_preference: Optional[str] = "auto"        # auto | era5 | forecast
     fetch_wind_if_missing: Optional[bool] = True
+    min_speed_ms: Optional[float] = 0.5   # <-- new, default 0.5 m/s
 
 class ApparentWindResult(BaseModel):
     source: Optional[str] = None   # "era5" | "forecast" | None (when not fetched)

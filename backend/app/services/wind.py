@@ -57,19 +57,35 @@ async def _forecast(lat: float, lon: float, start_dt, end_dt) -> dict:
     r.raise_for_status()
     return r.json()
 
+def _to_float(x):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return None
+
 def _build_uv(hourly: Dict):
-    times = hourly.get("time", []); spd = hourly.get("wind_speed_10m", []); direc = hourly.get("wind_direction_10m", [])
-    if not times or not spd or not direc or len(times)!=len(spd) or len(times)!=len(direc):
+    times = hourly.get("time", [])
+    spd   = hourly.get("wind_speed_10m", [])
+    direc = hourly.get("wind_direction_10m", [])
+    if not times or not spd or not direc or len(times) != len(spd) or len(times) != len(direc):
         raise ValueError("Open-Meteo hourly arrays inconsistent.")
-    tvec,uvec,vvec = [],[],[]
-    for t,s,d in zip(times, spd, direc):
-        dt = _to_dt(t); 
-        if dt is None: continue
-        ws = float(s); wd = float(d)
-        u,v = met_dir_deg_to_uv(ws, wd)
-        tvec.append(dt); uvec.append(u); vvec.append(v)
-    if not tvec: raise ValueError("Open-Meteo hourly series empty after parsing.")
-    return tvec,uvec,vvec
+
+    tvec, uvec, vvec = [], [], []
+    kept = 0
+    for t, s, d in zip(times, spd, direc):
+        dt = _to_dt(t)
+        ws = _to_float(s)
+        wd = _to_float(d)
+        if dt is None or ws is None or wd is None:
+            continue
+        u, v = met_dir_deg_to_uv(ws, wd)
+        tvec.append(dt); uvec.append(u); vvec.append(v); kept += 1
+
+    if not tvec:
+        raise ValueError("Open-Meteo hourly series empty after parsing.")
+    log.info(f"Open-Meteo hourly parsed: kept {kept} valid hours of {len(times)}")
+    return tvec, uvec, vvec
+
 
 async def fetch_openmeteo_hourly_auto(lat: float, lon: float, start_dt, end_dt, pref: str="auto"):
     async def try_source(fn, tag):
