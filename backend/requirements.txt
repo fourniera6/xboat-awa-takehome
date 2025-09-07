@@ -7,8 +7,9 @@ pydantic-settings
 python-multipart
 orjson
 cachetools
-
+typing-extensions
 # Optional parsers (uncomment if you actually use them)
 gpxpy           # for GPX files
-# pandas
-# numpy
+lxml            # for XML files
+pandas
+numpy
