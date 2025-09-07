@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { api } from "../services/api";
 
 /**
  * Load a sample GPX from a backend static route and hand it to a callback.
