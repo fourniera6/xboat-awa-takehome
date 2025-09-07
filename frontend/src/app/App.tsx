@@ -85,41 +85,37 @@ export default function App() {
   const highlightAwaRel = hovered?.awa != null ? wrap360(hovered.awa) : null;
 
   // single, shared file-processing pipeline (used by both autoload + manual upload)
-  const processFile = useCallback(async (f: File) => {
+const processFile = useCallback(async (f: File) => {
+  try {
     setError(null);
     setFile(f);
-    try {
-      const p = await parseGpsFile(f); // hits /api/v1/parse-gps?return_full=true
-      setParsed(p);
 
-      // prefer full trace if present; fall back to 0
-      const total = (p as any)?.num_points ?? p.points?.length ?? 0;
+    const p = await parseGpsFile(f);   // hits /api/v1/parse-gps?return_full=true
+    setParsed(p);
 
-      if (AUTO_COMPUTE_ON_BOOT && total > 0 && p.points && p.points.length) {
-        setLoadingCompute(true);
-        const ar = await computeApparent(p.points); // hits /api/v1/apparent-wind
-        setApparent(ar);
-      }
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
-    } finally {
-      setLoadingCompute(false);
+    if (AUTO_COMPUTE_ON_BOOT && p.points?.length) {
+      setLoadingCompute(true);
+      const ar = await computeApparent(p.points); // will POST to /api/v1/apparent-wind
+      setApparent(ar);
     }
-  }, []);
+  } catch (err: any) {
+    setError(err?.message ?? String(err));
+  } finally {
+    setLoadingCompute(false);
+  }
+}, []);
 
   // handlers
   const onChartHover = useCallback((idx: number | null) => setHoverIdx(idx), [setHoverIdx]);
 
-  const onFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const f = e.target.files?.[0] || null;
-      if (f) void processFile(f);
-    },
-    [processFile]
-  );
+// file input
+const onFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const f = e.target.files?.[0] || null;
+  if (f) processFile(f);
+}, [processFile]);
 
-  // autoload sample at boot (served statically by nginx from /frontend/public)
-  useAutoloadSample(AUTO_LOAD_SAMPLE ? SAMPLE_PATH : null, processFile);
+// autoload the sample
+useAutoloadSample(AUTO_LOAD_SAMPLE ? SAMPLE_PATH : null, processFile);
 
   // parse summary (render-safe)
   const parseSummary =
