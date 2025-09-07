@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file: .env
+    environment:
+      ENV: ${ENV:-demo}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"   # public port → Nginx → frontend; proxies /api to FastAPI
+    restart: unless-stopped

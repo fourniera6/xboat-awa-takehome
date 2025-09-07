@@ -39,13 +39,6 @@ export default function App() {
   // hover index (rAF throttled)
   const [hoverIdx, setHoverIdx] = useRafState<number | null>(null);
 
-  // theme tokens
-  const chartAxis = "var(--color-chart-axis)";
-  const chartGrid = "var(--color-chart-grid)";
-  const chartLegend = "var(--color-chart-legend)";
-  const c1 = "var(--color-chart-line-1)";
-  const c2 = "var(--color-chart-line-2)";
-  const c3 = "var(--color-chart-line-3)";
 
   // series
   const series: SeriesPoint[] = useMemo(

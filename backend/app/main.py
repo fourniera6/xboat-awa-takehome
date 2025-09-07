@@ -1,3 +1,4 @@
+import os
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,12 @@ logging.basicConfig(
 log = logging.getLogger("xboat-api")
 
 app = FastAPI(title="XBoat GPS + Wind API", version="1.0")
+if os.getenv("ENV") == "demo":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"], allow_credentials=False,
+        allow_methods=["*"], allow_headers=["*"]
+    )
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,3 +49,9 @@ app.mount("/samples", StaticFiles(directory=str(SAMPLES_DIR)), name="samples")
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/healthz")
+def healthz(): return {"ok": True}
+
+@app.get("/livez")
+def livez(): return {"live": True}
