@@ -1,3 +1,56 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* v4 entry */
+@import "tailwindcss";
+
+/* Tell Tailwind where to scan (v4 CSS-based equivalent of content globs) */
+@source "./index.html" "./src/**/*.{ts,tsx,js,jsx}";
+
+/* Theme tokens (v4-style) replacing the JS config `theme.extend.colors` etc. */
+@theme {
+  --color-base-900: #0c1116;
+  --color-base-850: #0f141a;
+  --color-base-800: #121821;
+  --color-base-750: #151c26;
+  --color-base-700: #1a2230;
+  --color-base-600: #242f3f;
+  --color-base-500: #2f3c50;
+  --color-base-400: #3b4b64;
+  --color-base-300: #516686;
+  --color-base-200: #90a0b7;
+  --color-base-100: #cbd5e1;
+
+  --color-primary:      #60a5fa;
+  --color-primary-600:  #3b82f6;
+  --color-primary-700:  #2563eb;
+
+  --color-border: #1f2835;
+  --color-muted:  #94a3b8;
+
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.04),
+                 0 0 0 1px rgba(0,0,0,0.6) inset;
+                 
+  --color-panel:              var(--color-base-850);
+  --color-chart-grid:         #293448;   /* subtle grid */
+  --color-chart-axis:         #9fb1c8;   /* ticks/labels */
+  --color-chart-legend:       #c8d3e0;
+
+  --color-chart-line-1:       #63b3ff;   /* main line */
+  --color-chart-line-2:       #39c6ff;   /* secondary */
+  --color-chart-line-3:       #8db7ff;   /* tertiary */
+
+  --shadow-soft: 0 0 0 1px rgba(255,255,255,0.02) inset,
+                 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* (Optional) light/dark defaults */
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+body { @apply bg-base-900 text-base-100 antialiased; }
+
+/* Scrollbars */
+* { scrollbar-width: thin; scrollbar-color: #3b4b64 transparent; }
+::-webkit-scrollbar { height: 8px; width: 8px; }
+::-webkit-scrollbar-thumb { background: #3b4b64; border-radius: 8px; }
+::-webkit-scrollbar-track { background: transparent; }

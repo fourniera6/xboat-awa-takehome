@@ -1,7 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: "class",                       // 👈 allow manual control
-  content: ["./index.html", "./src/**/*.{ts,tsx}"],
-  theme: { extend: {} },
-  plugins: [],
+  darkMode: "class",
+  // No "content" needed in v4 when you use @source in CSS
 };

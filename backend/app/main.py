@@ -1,6 +1,8 @@
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.api.v1.gps import router as gps_router
@@ -26,6 +28,16 @@ app.add_middleware(
 app.include_router(gps_router, prefix="/api/v1")
 app.include_router(wind_router, prefix="/api/v1")
 app.include_router(apparent_router, prefix="/api/v1")
+
+# --- resolve <repo>/backend/sample_data as an absolute path ---
+HERE = Path(__file__).resolve().parent         # backend/app
+BACKEND_ROOT = HERE.parent                     # backend
+SAMPLES_DIR = BACKEND_ROOT / "sample_data"     # backend/sample_data
+
+# (Optional) create it so StaticFiles doesn't crash if missing.
+SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
+
+app.mount("/samples", StaticFiles(directory=str(SAMPLES_DIR)), name="samples")
 
 @app.get("/health")
 def health():
