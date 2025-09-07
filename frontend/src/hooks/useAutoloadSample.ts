@@ -12,7 +12,7 @@ export function useAutoloadSample(
     try {
       const blob = await fetch("/activity_20298293877.gpx").then(r => r.blob());
       const file = new File([blob], "activity_20298293877.gpx", { type: "application/gpx+xml" });
-      await parseGpsFile(file, true);
+      await parseGpsFile(file);
     } catch (e) {
       console.error(e);
     }
