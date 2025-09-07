@@ -2,6 +2,14 @@ export const API_BASE =
   (import.meta as any).env?.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Dev-time guard: /parse-gps must be POST
+  if (import.meta.env.DEV) {
+    const method = (init?.method ?? "GET").toUpperCase();
+    if (path.startsWith("/api/v1/parse-gps") && method !== "POST") {
+      throw new Error(`parse-gps must be POST, got ${method} ${path}`);
+    }
+  }
+
   const res = await fetch(`${API_BASE}${path}`, init);
   if (!res.ok) {
     const text = await res.text().catch(() => "");

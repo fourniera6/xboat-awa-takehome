@@ -6,21 +6,26 @@ import { api } from "../services/api";
  * Pass `null` to disable.
  */
 export function useAutoloadSample(
-  samplePath: string | null,
-  onFile: (f: File) => void
+  sampleUrl: string | null,
+  onReady: (file: File) => void
 ) {
   useEffect(() => {
-    if (!samplePath) return;
+    if (!sampleUrl) return;
+    let cancelled = false;
     (async () => {
       try {
-        const blob = await api.getBlob(samplePath);
-        const f = new File([blob], samplePath.split("/").pop() || "sample.gpx", {
+        const r = await fetch(sampleUrl);        // <-- GET only the static file
+        if (!r.ok) return;                       // silently skip if not served
+        const blob = await r.blob();
+        if (cancelled) return;
+        const f = new File([blob], sampleUrl.split("/").pop() || "sample.gpx", {
           type: blob.type || "application/gpx+xml",
         });
-        onFile(f);
+        onReady(f);                               // <-- your App.tsx calls parseGpsFile(f)
       } catch {
-        // ignore if not reachable
+        /* ignore */
       }
     })();
-  }, [samplePath, onFile]);
+    return () => { cancelled = true; };
+  }, [sampleUrl, onReady]);
 }
