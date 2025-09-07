@@ -21,24 +21,20 @@ import { API_BASE } from "../services/api";
 
 import type { ApparentResult, ParseResult, SeriesPoint } from "../types/api";
 
-const AUTO_LOAD_SAMPLE =
-  (import.meta as any).env?.VITE_AUTO_LOAD_SAMPLE !== "false"; // default true
 const AUTO_COMPUTE_ON_BOOT =
   (import.meta as any).env?.VITE_AUTO_COMPUTE_ON_BOOT !== "false"; // default true
-const SAMPLE_PATH =
-  (import.meta as any).env?.VITE_SAMPLE_GPX_PATH ?? "/samples/activity_20298293877.gpx";
+
 
 export default function App() {
   // core data
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [apparent, setApparent] = useState<ApparentResult | null>(null);
-  const [, setLoadingCompute] = useState(false);
+  const [loadingCompute, setLoadingCompute] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // hover index (rAF throttled)
   const [hoverIdx, setHoverIdx] = useRafState<number | null>(null);
-
 
   // series
   const series: SeriesPoint[] = useMemo(
@@ -49,7 +45,7 @@ export default function App() {
 
   // Create the input shape the metrics module expects
   const kpis = useMemo(() => {
-    const inputs = series.map(s => ({
+    const inputs = series.map((s) => ({
       tNum: s.tNum,
       speed: s.speed ?? 0,
       aws: s.aws ?? 0,
@@ -59,10 +55,9 @@ export default function App() {
     return computeKPIs(inputs, {
       headGain: 0.25,
       cscScaleM: 8,
-      hedScale: 0.05, // <— tweak to taste/boat type
+      hedScale: 0.05, // tweak to taste/boat type
     });
   }, [series]);
-
 
   // roses data
   const headings = useMemo(
@@ -83,56 +78,42 @@ export default function App() {
   const highlightHdg = hovered?.heading ?? null;
   const highlightAwaRel = hovered?.awa != null ? wrap360(hovered.awa) : null;
 
-  // handlers
   const onChartHover = useCallback((idx: number | null) => setHoverIdx(idx), [setHoverIdx]);
+
+  // ---- shared file handler (used by upload + autoload) ----------------------
+  const handleFile = useCallback(async (f: File) => {
+    setFile(f);
+    try {
+      setError(null);
+      // ensure parseGpsFile posts multipart/form-data internally
+      const p = await parseGpsFile(f);
+      setParsed(p);
+
+      if (AUTO_COMPUTE_ON_BOOT && p.points?.length) {
+        setLoadingCompute(true);
+        const ar = await computeApparent(p.points);
+        setApparent(ar);
+      } else {
+        setApparent(null);
+      }
+    } catch (err: any) {
+      setError(err?.message ?? String(err));
+    } finally {
+      setLoadingCompute(false);
+    }
+  }, []);
+
+  // file input handler
   const onFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0] || null;
-      setFile(f);
-      if (!f) return;
-      (async () => {
-        try {
-          setError(null);
-          const p = await parseGpsFile(f);
-          setParsed(p);
-          if (AUTO_COMPUTE_ON_BOOT && p.points?.length) {
-            setLoadingCompute(true);
-            const ar = await computeApparent(p.points);
-            setApparent(ar);
-          }
-        } catch (err: any) {
-          setError(err?.message ?? String(err));
-        } finally {
-          setLoadingCompute(false);
-        }
-      })();
+      if (f) void handleFile(f);
     },
-    []
+    [handleFile]
   );
 
-  // autoload sample
-  useAutoloadSample(
-    AUTO_LOAD_SAMPLE ? SAMPLE_PATH : null,
-    useCallback((f: File) => {
-      setFile(f);
-      (async () => {
-        try {
-          setError(null);
-          const p = await parseGpsFile(f);
-          setParsed(p);
-          if (AUTO_COMPUTE_ON_BOOT && p.points?.length) {
-            setLoadingCompute(true);
-            const ar = await computeApparent(p.points);
-            setApparent(ar);
-          }
-        } catch (err: any) {
-          setError(err?.message ?? String(err));
-        } finally {
-          setLoadingCompute(false);
-        }
-      })();
-    }, [])
-  );
+  // autoload sample (serves from frontend/public)
+  useAutoloadSample();
 
   // parse summary
   const parseSummary =
@@ -162,11 +143,12 @@ export default function App() {
           </span>
           <span className="text-sm text-muted">{file ? file.name : "No file chosen"}</span>
         </label>
-
-        
       </div>
 
-      <Card title="Parse summary">{parseSummary}</Card>
+      <Card title="Parse summary">
+        {parseSummary}
+        {loadingCompute && <div className="mt-2 text-xs opacity-70">computing…</div>}
+      </Card>
 
       <Card title="Session KPIs">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -176,7 +158,6 @@ export default function App() {
             unit="m"
             hint={`k = 5% • raw = ${Math.round(kpis.hed_m)} m (∫ max(0, AWS·cos(AWA)) dt)`}
           />
-
           <KpiCard
             label="Crosswind Steering Cost"
             value={Math.round(kpis.csc_m)}
@@ -187,7 +168,9 @@ export default function App() {
           <KpiCard
             label="Adjusted Split (still-air)"
             value={fmtSplit(kpis.split_adj_s)}
-            hint={`Observed: ${fmtSplit(kpis.split_obs_s)} (${kpis.split_delta_s >= 0 ? "+" : ""}${kpis.split_delta_s.toFixed(1)} s)`}
+            hint={`Observed: ${fmtSplit(kpis.split_obs_s)} (${
+              kpis.split_delta_s >= 0 ? "+" : ""
+            }${kpis.split_delta_s.toFixed(1)} s)`}
             emphasize
           />
         </div>
@@ -195,18 +178,12 @@ export default function App() {
 
       {/* AWA */}
       <ChartSection title="AWA (°) — full series" dataReady={dataReady}>
-        <AWALineChart
-          data={series}
-          onHover={onChartHover}
-        />
+        <AWALineChart data={series} onHover={onChartHover} />
       </ChartSection>
 
       {/* Speeds */}
       <ChartSection title="Speeds (m/s) — full series" dataReady={dataReady}>
-        <SpeedsLineChart
-          data={series}
-          onHover={onChartHover}
-        />
+        <SpeedsLineChart data={series} onHover={onChartHover} />
       </ChartSection>
 
       {/* Roses */}

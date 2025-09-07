@@ -1,30 +1,21 @@
 import { useEffect } from "react";
+import { parseGpsFile } from "../services/parsing";
 
 /**
  * Load a sample GPX from a backend static route and hand it to a callback.
  * Pass `null` to disable.
  */
 export function useAutoloadSample(
-  sampleUrl: string | null,
-  onReady: (file: File) => void
 ) {
   useEffect(() => {
-    if (!sampleUrl) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch(sampleUrl);        // <-- GET only the static file
-        if (!r.ok) return;                       // silently skip if not served
-        const blob = await r.blob();
-        if (cancelled) return;
-        const f = new File([blob], sampleUrl.split("/").pop() || "sample.gpx", {
-          type: blob.type || "application/gpx+xml",
-        });
-        onReady(f);                               // <-- your App.tsx calls parseGpsFile(f)
-      } catch {
-        /* ignore */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [sampleUrl, onReady]);
+  (async () => {
+    try {
+      const blob = await fetch("/activity_20298293877.gpx").then(r => r.blob());
+      const file = new File([blob], "activity_20298293877.gpx", { type: "application/gpx+xml" });
+      await parseGpsFile(file, true);
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+}, []);
 }
