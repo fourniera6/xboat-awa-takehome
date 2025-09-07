@@ -13,7 +13,7 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Ensure Vite sees this at build-time
-ARG VITE_API_BASE_URL=/api
+ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 COPY frontend/package*.json ./
