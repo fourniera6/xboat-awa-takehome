@@ -23,7 +23,7 @@ Implementation for the XBoat Full-Stack Engineer take-home: load GPS data, fetch
 
 ## Demo
 
-https://findings-nobody-accordance-tension.trycloudflare.com/
+https://rules-counts-authority-jim.trycloudflare.com/
 
 ---
 
