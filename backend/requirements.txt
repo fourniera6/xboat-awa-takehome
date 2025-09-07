@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+gunicorn
+httpx
+pydantic
+pydantic-settings
+python-multipart
+orjson
+cachetools
+
+# Optional parsers (uncomment if you actually use them)
+# gpxpy           # for GPX files
+# pandas
+# numpy
