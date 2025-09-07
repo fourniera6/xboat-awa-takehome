@@ -170,25 +170,7 @@ export default function App() {
           <span className="text-sm text-muted">{file ? file.name : "No file chosen"}</span>
         </label>
 
-        <button
-          onClick={async () => {
-            if (!parsed?.points?.length) return;
-            try {
-              setError(null);
-              setLoadingCompute(true);
-              const ar = await computeApparent(parsed.points);
-              setApparent(ar);
-            } catch (err: any) {
-              setError(err?.message ?? String(err));
-            } finally {
-              setLoadingCompute(false);
-            }
-          }}
-          disabled={!parsed?.points?.length || loadingCompute}
-          className="rounded-lg bg-primary px-3 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loadingCompute ? "Computing…" : "Compute Apparent Wind"}
-        </button>
+        
       </div>
 
       <Card title="Parse summary">{parseSummary}</Card>
