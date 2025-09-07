@@ -2,12 +2,11 @@
 
 Implementation for the XBoat Full-Stack Engineer take-home: load GPS data, fetch ambient wind (Open-Meteo), compute apparent wind per point, visualize it, and summarize impact.
 
-This repo provides **clear setup instructions** and a simple local/Docker run path to meet the deliverable, with notes that map to the evaluation criteria (Correctness, Product Thinking, Creativity & Design, Quality).
-
 ---
 
 ## Contents
 
+- [Demo](#demo)
 - [Architecture](#architecture)
 - [Repo Structure](#repo-structure)
 - [Prerequisites](#prerequisites)
@@ -19,7 +18,12 @@ This repo provides **clear setup instructions** and a simple local/Docker run pa
 - [Testing & Linting](#testing--linting)
 - [Troubleshooting](#troubleshooting)
 - [Evaluation Mapping](#evaluation-mapping)
-- [License](#license)
+
+---
+
+## Demo
+
+https://findings-nobody-accordance-tension.trycloudflare.com/
 
 ---
 
@@ -49,8 +53,6 @@ infra/          (optional) deploy configs/IaC
 .env.example    Example configuration
 docker-compose.yml
 ```
-
-> This matches the current repo layout. If you add or rename folders, update this section accordingly.
 
 ---
 
@@ -224,9 +226,3 @@ npm run lint && npm run format
 - **Product Thinking** — Clear upload flow, obvious defaults, concise summary panel (head/cross/tail proportions, segment highlights).
 - **Creativity & Design** — Readable charts and tooltips; responsive layout; sensible legends.
 - **Quality** — Typed models (Pydantic/TS), linting/formatting, basic tests, and optional Docker/CI.
-
----
-
-## License
-
-MIT (or your preferred OSS license)
