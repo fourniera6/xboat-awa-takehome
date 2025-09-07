@@ -1,5 +1,6 @@
 export const DEG2RAD = Math.PI / 180;
 export const RAD2DEG = 180 / Math.PI;
+export const TWO_PI = Math.PI * 2;
 
 export const wrap360 = (d: number) => (d % 360 + 360) % 360;
 
@@ -31,4 +32,18 @@ export function bearingFromLatLon(
   const y = Math.sin(Δλ) * Math.cos(φ2);
   const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
   return wrap360(Math.atan2(y, x) * RAD2DEG);
+}
+
+/**
+ * Unwrap the current angle so it’s continuous relative to the previous one.
+ * Both angles are in RADIANS. Returns the current angle shifted by ±2π
+ * until it lies within ±π of the previous.
+ */
+export function unwrap(prevRad: number | null, currRad: number | null): number | null {
+  if (currRad == null) return null;
+  if (prevRad == null) return currRad;
+  let x = currRad;
+  while (x - prevRad > Math.PI)  x -= TWO_PI;
+  while (x - prevRad < -Math.PI) x += TWO_PI;
+  return x;
 }

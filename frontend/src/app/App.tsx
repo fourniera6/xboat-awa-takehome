@@ -2,10 +2,12 @@ import React, { useCallback, useMemo, useState } from "react";
 import { AppShell } from "./AppShell";
 
 import { Card } from "../components/Card";
-import { ChartSection } from "../components/ChartSection";
 import { CompassRose } from "../components/CompassRose";
-import { AWALineChart } from "../components/charts/AWALineChart";
-import { SpeedsLineChart } from "../components/charts/SpeedsLineChart";
+import ChartSection from "../components/ChartSection";
+import AWALineChart from "../components/charts/AWALineChart";
+import SpeedsLineChart from "../components/charts/SpeedsLineChart";
+import KpiCard, { fmtSplit } from "../components/KpiCard";
+import { computeKPIs } from "../lib/metrics";
 
 import { useRafState } from "../hooks/useRafState";
 import { useAutoloadSample } from "../hooks/useAutoloadSample";
@@ -51,6 +53,23 @@ export default function App() {
     [apparent]
   );
   const dataReady = series.length > 0;
+
+  // Create the input shape the metrics module expects
+  const kpis = useMemo(() => {
+    const inputs = series.map(s => ({
+      tNum: s.tNum,
+      speed: s.speed ?? 0,
+      aws: s.aws ?? 0,
+      awa: s.awa ?? 0,
+      heading: s.heading ?? null,
+    }));
+    return computeKPIs(inputs, {
+      headGain: 0.25,
+      cscScaleM: 8,
+      hedScale: 0.05, // <— tweak to taste/boat type
+    });
+  }, [series]);
+
 
   // roses data
   const headings = useMemo(
@@ -174,12 +193,36 @@ export default function App() {
 
       <Card title="Parse summary">{parseSummary}</Card>
 
+      <Card title="Session KPIs">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <KpiCard
+            label="HED (extra meters paid to wind)"
+            value={Math.round(kpis.hed_m)}
+            unit="m"
+            hint={`k = 5% • raw = ${Math.round(kpis.hed_m)} m (∫ max(0, AWS·cos(AWA)) dt)`}
+          />
+
+          <KpiCard
+            label="Crosswind Steering Cost"
+            value={Math.round(kpis.csc_m)}
+            unit="m (proxy)"
+            hint="k · ∫ |A⊥|·|dθ/ds| dt, k=8 m"
+            emphasize
+          />
+          <KpiCard
+            label="Adjusted Split (still-air)"
+            value={fmtSplit(kpis.split_adj_s)}
+            hint={`Observed: ${fmtSplit(kpis.split_obs_s)} (${kpis.split_delta_s >= 0 ? "+" : ""}${kpis.split_delta_s.toFixed(1)} s)`}
+            emphasize
+          />
+        </div>
+      </Card>
+
       {/* AWA */}
       <ChartSection title="AWA (°) — full series" dataReady={dataReady}>
         <AWALineChart
           data={series}
-          onHoverIndex={onChartHover}
-          colors={{ axis: chartAxis, grid: chartGrid, legend: chartLegend, line1: c1 }}
+          onHover={onChartHover}
         />
       </ChartSection>
 
@@ -187,8 +230,7 @@ export default function App() {
       <ChartSection title="Speeds (m/s) — full series" dataReady={dataReady}>
         <SpeedsLineChart
           data={series}
-          onHoverIndex={onChartHover}
-          colors={{ axis: chartAxis, grid: chartGrid, legend: chartLegend, line1: c1, line2: c2, line3: c3 }}
+          onHover={onChartHover}
         />
       </ChartSection>
 

@@ -1,42 +1,48 @@
 import React, { useLayoutEffect, useRef, useState } from "react";
-import { ResponsiveContainer } from "recharts";
-import { Card } from "./Card";
+import {Card} from "./Card";
 
-export function ChartSection({
+type Props = {
+  title: string;
+  height?: number;
+  dataReady: boolean;
+  actions?: React.ReactNode;
+  children: React.ReactNode; // can be a custom component now
+};
+
+export default function ChartSection({
   title,
   height = 340,
   dataReady,
   actions,
   children,
-}: {
-  title: string;
-  height?: number;
-  dataReady: boolean;
-  actions?: React.ReactNode;
-  children: React.ReactElement;
-}) {
+}: Props) {
+  // Keep the “has size” guard so we never render charts into a 0×0 box.
   const ref = useRef<HTMLDivElement | null>(null);
-  const [w, setW] = useState(0);
+  const [hasSize, setHasSize] = useState(false);
 
   useLayoutEffect(() => {
     if (!ref.current) return;
     const ro = new ResizeObserver((entries) => {
-      const cr = entries[0]?.contentRect;
-      if (cr) setW(cr.width);
+      const w = entries[0]?.contentRect.width ?? 0;
+      const h = entries[0]?.contentRect.height ?? 0;
+      setHasSize(w > 8 && h > 8);
     });
     ro.observe(ref.current);
     return () => ro.disconnect();
   }, []);
 
-  const ready = dataReady && w > 0;
+  const ready = dataReady && hasSize;
 
   return (
     <Card title={title} actions={actions} className="w-full">
-      <div ref={ref} className="w-full" style={{ height }}>
+      <div
+        ref={ref}
+        className="w-full"
+        style={{ height, minHeight: height }}
+      >
         {ready ? (
-          <ResponsiveContainer width="100%" height="100%">
-            {children}
-          </ResponsiveContainer>
+          // NOTE: children will include its own <ResponsiveContainer />
+          children
         ) : (
           <div className="grid h-full w-full place-items-center text-sm text-muted">
             {dataReady ? "Measuring layout…" : "Loading data…"}
