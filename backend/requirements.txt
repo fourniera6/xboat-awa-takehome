@@ -13,3 +13,4 @@ gpxpy           # for GPX files
 lxml            # for XML files
 pandas
 numpy
+fitdecode
