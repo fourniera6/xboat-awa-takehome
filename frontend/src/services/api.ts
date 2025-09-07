@@ -1,5 +1,8 @@
 export const API_BASE =
-  (import.meta as any).env?.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
+  String((import.meta as any).env?.VITE_API_BASE_URL ?? "http://127.0.0.1:8000")
+    .replace(/\/+$/,'')        // trim trailing slash(es)
+    .replace(/^\/api$/,'');    // if base is exactly "/api", make it empty to avoid "/api/api/..."
+
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   // Dev-time guard: /parse-gps must be POST
