@@ -9,6 +9,6 @@ orjson
 cachetools
 
 # Optional parsers (uncomment if you actually use them)
-# gpxpy           # for GPX files
+gpxpy           # for GPX files
 # pandas
 # numpy
