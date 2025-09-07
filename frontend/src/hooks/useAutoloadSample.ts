@@ -6,8 +6,11 @@ import { parseGpsFile } from "../services/parsing";
  * Pass `null` to disable.
  */
 export function useAutoloadSample(
+  samplePath: string | null,
+  onReady: (file: File) => void
 ) {
   useEffect(() => {
+    if (!samplePath) return; 
   (async () => {
     try {
       const blob = await fetch("/activity_20298293877.gpx").then(r => r.blob());
@@ -17,5 +20,5 @@ export function useAutoloadSample(
       console.error(e);
     }
   })();
-}, []);
+}, [samplePath, onReady]);
 }

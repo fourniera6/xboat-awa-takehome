@@ -21,16 +21,22 @@ import { API_BASE } from "../services/api";
 
 import type { ApparentResult, ParseResult, SeriesPoint } from "../types/api";
 
+// env flags
+const AUTO_LOAD_SAMPLE =
+  (import.meta as any).env?.VITE_AUTO_LOAD_SAMPLE !== "false"; // default true
 const AUTO_COMPUTE_ON_BOOT =
   (import.meta as any).env?.VITE_AUTO_COMPUTE_ON_BOOT !== "false"; // default true
 
+// default sample path should match the file you serve at frontend/public/
+const SAMPLE_PATH =
+  (import.meta as any).env?.VITE_SAMPLE_GPX_PATH ?? "/activity_20298293877.gpx";
 
 export default function App() {
   // core data
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [apparent, setApparent] = useState<ApparentResult | null>(null);
-  const [loadingCompute, setLoadingCompute] = useState(false);
+  const [, setLoadingCompute] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // hover index (rAF throttled)
@@ -43,7 +49,7 @@ export default function App() {
   );
   const dataReady = series.length > 0;
 
-  // Create the input shape the metrics module expects
+  // KPIs input
   const kpis = useMemo(() => {
     const inputs = series.map((s) => ({
       tNum: s.tNum,
@@ -55,7 +61,7 @@ export default function App() {
     return computeKPIs(inputs, {
       headGain: 0.25,
       cscScaleM: 8,
-      hedScale: 0.05, // tweak to taste/boat type
+      hedScale: 0.05,
     });
   }, [series]);
 
@@ -78,23 +84,21 @@ export default function App() {
   const highlightHdg = hovered?.heading ?? null;
   const highlightAwaRel = hovered?.awa != null ? wrap360(hovered.awa) : null;
 
-  const onChartHover = useCallback((idx: number | null) => setHoverIdx(idx), [setHoverIdx]);
-
-  // ---- shared file handler (used by upload + autoload) ----------------------
-  const handleFile = useCallback(async (f: File) => {
+  // single, shared file-processing pipeline (used by both autoload + manual upload)
+  const processFile = useCallback(async (f: File) => {
+    setError(null);
     setFile(f);
     try {
-      setError(null);
-      // ensure parseGpsFile posts multipart/form-data internally
-      const p = await parseGpsFile(f);
+      const p = await parseGpsFile(f); // hits /api/v1/parse-gps?return_full=true
       setParsed(p);
 
-      if (AUTO_COMPUTE_ON_BOOT && p.points?.length) {
+      // prefer full trace if present; fall back to 0
+      const total = (p as any)?.num_points ?? p.points?.length ?? 0;
+
+      if (AUTO_COMPUTE_ON_BOOT && total > 0 && p.points && p.points.length) {
         setLoadingCompute(true);
-        const ar = await computeApparent(p.points);
+        const ar = await computeApparent(p.points); // hits /api/v1/apparent-wind
         setApparent(ar);
-      } else {
-        setApparent(null);
       }
     } catch (err: any) {
       setError(err?.message ?? String(err));
@@ -103,24 +107,31 @@ export default function App() {
     }
   }, []);
 
-  // file input handler
+  // handlers
+  const onChartHover = useCallback((idx: number | null) => setHoverIdx(idx), [setHoverIdx]);
+
   const onFileChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const f = e.target.files?.[0] || null;
-      if (f) void handleFile(f);
+      if (f) void processFile(f);
     },
-    [handleFile]
+    [processFile]
   );
 
-  // autoload sample (serves from frontend/public)
-  useAutoloadSample();
+  // autoload sample at boot (served statically by nginx from /frontend/public)
+  useAutoloadSample(AUTO_LOAD_SAMPLE ? SAMPLE_PATH : null, processFile);
 
-  // parse summary
+  // parse summary (render-safe)
   const parseSummary =
     parsed && (
       <div className="text-xs text-muted">
-        <span className="font-medium">{parsed.source}</span> •{" "}
-        {parsed.points.length.toLocaleString()} pts • {parsed.start_time} → {parsed.end_time}
+        <span className="font-medium">
+          {(parsed as any).source ?? (parsed as any).file_type ?? "trace"}
+        </span>
+        {" • "}
+        {((parsed.points?.length ?? (parsed as any).num_points ?? 0).toLocaleString())} pts
+        {" • "}
+        {parsed.start_time} → {parsed.end_time}
         {parsed.speed_was_derived ? (
           <span className="ml-2 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-300">
             speed derived
@@ -145,10 +156,7 @@ export default function App() {
         </label>
       </div>
 
-      <Card title="Parse summary">
-        {parseSummary}
-        {loadingCompute && <div className="mt-2 text-xs opacity-70">computing…</div>}
-      </Card>
+      <Card title="Parse summary">{parseSummary}</Card>
 
       <Card title="Session KPIs">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -168,9 +176,9 @@ export default function App() {
           <KpiCard
             label="Adjusted Split (still-air)"
             value={fmtSplit(kpis.split_adj_s)}
-            hint={`Observed: ${fmtSplit(kpis.split_obs_s)} (${
-              kpis.split_delta_s >= 0 ? "+" : ""
-            }${kpis.split_delta_s.toFixed(1)} s)`}
+            hint={`Observed: ${fmtSplit(kpis.split_obs_s)} (${kpis.split_delta_s >= 0 ? "+" : ""}${kpis.split_delta_s.toFixed(
+              1
+            )} s)`}
             emphasize
           />
         </div>
