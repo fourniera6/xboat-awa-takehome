@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { roseBins, binIndex } from "../lib/roses";
 import { DEG2RAD } from "../lib/math";
 import { Card } from "./Card";

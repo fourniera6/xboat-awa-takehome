@@ -1,5 +1,4 @@
 // src/components/ui/KpiCard.tsx
-import React from "react";
 
 export function fmtSplit(sec: number) {
   if (!isFinite(sec) || sec <= 0) return "—";

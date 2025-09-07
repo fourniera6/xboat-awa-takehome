@@ -33,7 +33,7 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [apparent, setApparent] = useState<ApparentResult | null>(null);
-  const [loadingCompute, setLoadingCompute] = useState(false);
+  const [, setLoadingCompute] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // hover index (rAF throttled)
